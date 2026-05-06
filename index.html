@@ -1,1 +1,689 @@
- sasd
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soccer League Simulator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0a1628;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, #1a3a2a, #0d2137);
+    padding: 20px 30px;
+    text-align: center;
+    border-bottom: 3px solid #2ecc71;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    color: #2ecc71;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  header p { color: #8899aa; margin-top: 5px; font-size: 0.9rem; }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: #111d30;
+    border-radius: 12px;
+    border: 1px solid #1e3a5f;
+    overflow: hidden;
+  }
+  .panel-header {
+    background: linear-gradient(90deg, #1a3355, #0f2744);
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #2ecc71;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #1e3a5f;
+  }
+  .panel-body { padding: 0; }
+
+  /* TABLE */
+  table.standings {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  table.standings thead th {
+    background: #0d1f35;
+    padding: 10px 6px;
+    text-align: center;
+    color: #6a8caa;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+  }
+  table.standings thead th:nth-child(2) { text-align: left; }
+  table.standings tbody tr {
+    border-bottom: 1px solid #1a2d48;
+    transition: background 0.3s;
+  }
+  table.standings tbody tr:hover { background: #162a48; }
+  table.standings tbody td {
+    padding: 9px 6px;
+    text-align: center;
+  }
+  table.standings tbody td:nth-child(2) {
+    text-align: left;
+    font-weight: 600;
+    color: #fff;
+  }
+  .pos-1 { border-left: 3px solid #f1c40f; }
+  .pos-2 { border-left: 3px solid #bdc3c7; }
+  .pos-3 { border-left: 3px solid #cd7f32; }
+  .pos-bottom { border-left: 3px solid #e74c3c; }
+  .pts-cell { font-weight: 700; color: #2ecc71; font-size: 0.95rem; }
+  .gd-pos { color: #2ecc71; }
+  .gd-neg { color: #e74c3c; }
+
+  /* FIXTURES */
+  .round-group {
+    border-bottom: 1px solid #1a2d48;
+  }
+  .round-header {
+    background: #0d1f35;
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #6a8caa;
+    font-size: 0.85rem;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .round-header:hover { background: #132844; }
+  .round-header .date { font-weight: 400; color: #4a6a88; font-size: 0.78rem; }
+  .round-header .toggle { transition: transform 0.3s; font-size: 0.7rem; }
+  .round-header .toggle.open { transform: rotate(180deg); }
+
+  .round-body {
+    display: none;
+    padding: 8px 12px;
+  }
+  .round-body.open { display: block; }
+
+  .match-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #15253d;
+    flex-wrap: wrap;
+  }
+  .match-row:last-child { border-bottom: none; }
+  .match-row.completed { opacity: 0.5; }
+
+  .team-name {
+    flex: 1;
+    min-width: 100px;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .team-name.home { text-align: right; }
+  .team-name.away { text-align: left; }
+
+  .score-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .score-inputs input {
+    width: 42px;
+    height: 32px;
+    text-align: center;
+    background: #0a1628;
+    border: 2px solid #1e3a5f;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .score-inputs input:focus { border-color: #2ecc71; }
+  .score-inputs input.scored { border-color: #2ecc71; background: #0d2a1a; }
+  .score-sep { color: #4a6a88; font-weight: 700; font-size: 1.1rem; }
+
+  .match-row .apply-btn {
+    background: #2ecc71;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .match-row .apply-btn:hover { background: #27ae60; }
+  .match-row .apply-btn:disabled {
+    background: #2a3a4a;
+    color: #5a6a7a;
+    cursor: not-allowed;
+  }
+
+  .match-row .undo-btn {
+    background: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .match-row .undo-btn:hover { background: #e74c3c; color: #fff; }
+
+  .controls {
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .controls button {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .btn-reset { background: #e74c3c; color: #fff; }
+  .btn-reset:hover { background: #c0392b; }
+  .btn-expand { background: #1e3a5f; color: #6a8caa; }
+  .btn-expand:hover { background: #2a4a6f; color: #8ab0d0; }
+  .btn-collapse { background: #1e3a5f; color: #6a8caa; }
+  .btn-collapse:hover { background: #2a4a6f; color: #8ab0d0; }
+
+  .stats-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #0d1f35;
+    font-size: 0.78rem;
+    color: #4a6a88;
+    border-top: 1px solid #1a2d48;
+  }
+  .stats-bar span { color: #2ecc71; font-weight: 600; }
+
+  .table-scroll { max-height: 80vh; overflow-y: auto; }
+
+  .round-badge {
+    display: inline-block;
+    background: #1e3a5f;
+    color: #6a8caa;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚽ Sunshine Coast League Simulator</h1>
+  <p>Pick your scores for the remaining fixtures and watch the table update in real-time</p>
+</header>
+
+<div class="container">
+  <div class="layout">
+    <!-- LEFT: Standings -->
+    <div class="panel" style="position:sticky; top:10px;">
+      <div class="panel-header">
+        <span>📊 League Table</span>
+        <span id="playedCount" style="font-size:0.8rem; color:#6a8caa;">0 / 65 played</span>
+      </div>
+      <div class="table-scroll">
+        <table class="standings">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>GF</th>
+              <th>GA</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody id="standingsBody"></tbody>
+        </table>
+      </div>
+      <div class="stats-bar">
+        <div>Games played: <span id="gamesPlayed">25</span> / 90</div>
+        <div>Remaining: <span id="gamesRemaining">65</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Fixtures -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📅 Remaining Fixtures</span>
+        <span id="fixtureStatus" style="font-size:0.8rem; color:#6a8caa;"></span>
+      </div>
+      <div class="controls">
+        <button class="btn-expand" onclick="toggleAllRounds(true)">▼ Expand All</button>
+        <button class="btn-collapse" onclick="toggleAllRounds(false)">▲ Collapse All</button>
+        <button class="btn-reset" onclick="resetAll()">⟲ Reset All</button>
+      </div>
+      <div id="fixturesContainer" class="table-scroll" style="max-height:80vh; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TEAM DATA (initial state from the table) ──
+const teams = {
+  "Palmwoods Commandos":     { p:5, w:5, d:0, l:0, gf:29, ga:2,  pts:15 },
+  "Chancellor Cruisers":     { p:5, w:4, d:1, l:0, gf:27, ga:8,  pts:13 },
+  "Caloundra Black":         { p:5, w:4, d:0, l:1, gf:33, ga:6,  pts:12 },
+  "Currimundi Bluebottles":  { p:5, w:4, d:0, l:1, gf:16, ga:2,  pts:12 },
+  "Caloundra Storm":         { p:5, w:3, d:1, l:1, gf:21, ga:6,  pts:10 },
+  "Siena Frogs":             { p:5, w:1, d:1, l:3, gf:15, ga:21, pts:4  },
+  "Unity Kingbrowns":        { p:5, w:1, d:1, l:3, gf:7,  ga:22, pts:4  },
+  "Buderim Force":           { p:5, w:1, d:0, l:4, gf:13, ga:16, pts:3  },
+  "Chancellor Cats":         { p:5, w:0, d:0, l:5, gf:2,  ga:37, pts:0  },
+  "Palmwoods Rangers":       { p:5, w:0, d:0, l:5, gf:2,  ga:45, pts:0  },
+};
+
+// ── REMAINING FIXTURES ──
+const fixtures = [
+  // Round 6 - 9/5/2026
+  { round:6,  date:"9/5/2026",  home:"Chancellor Cruisers",     away:"Siena Frogs" },
+  { round:6,  date:"9/5/2026",  home:"Unity Kingbrowns",        away:"Buderim Force" },
+  { round:6,  date:"9/5/2026",  home:"Palmwoods Commandos",     away:"Caloundra Storm" },
+  { round:6,  date:"9/5/2026",  home:"Palmwoods Rangers",       away:"Chancellor Cats" },
+  { round:6,  date:"9/5/2026",  home:"Currimundi Bluebottles",  away:"Caloundra Black" },
+  // Round 7 - 16/5/2026
+  { round:7,  date:"16/5/2026", home:"Unity Kingbrowns",        away:"Palmwoods Commandos" },
+  { round:7,  date:"16/5/2026", home:"Caloundra Black",         away:"Chancellor Cats" },
+  { round:7,  date:"16/5/2026", home:"Siena Frogs",             away:"Palmwoods Rangers" },
+  { round:7,  date:"16/5/2026", home:"Caloundra Storm",         away:"Buderim Force" },
+  { round:7,  date:"16/5/2026", home:"Currimundi Bluebottles",  away:"Chancellor Cruisers" },
+  // Round 8 - 23/5/2026
+  { round:8,  date:"23/5/2026", home:"Caloundra Storm",         away:"Chancellor Cats" },
+  { round:8,  date:"23/5/2026", home:"Buderim Force",           away:"Palmwoods Rangers" },
+  { round:8,  date:"23/5/2026", home:"Siena Frogs",             away:"Palmwoods Commandos" },
+  { round:8,  date:"23/5/2026", home:"Currimundi Bluebottles",  away:"Unity Kingbrowns" },
+  { round:8,  date:"23/5/2026", home:"Caloundra Black",         away:"Chancellor Cruisers" },
+  // Round 9 - 30/5/2026
+  { round:9,  date:"30/5/2026", home:"Palmwoods Commandos",     away:"Chancellor Cruisers" },
+  { round:9,  date:"30/5/2026", home:"Siena Frogs",             away:"Buderim Force" },
+  { round:9,  date:"30/5/2026", home:"Caloundra Black",         away:"Caloundra Storm" },
+  { round:9,  date:"30/5/2026", home:"Currimundi Bluebottles",  away:"Chancellor Cats" },
+  { round:9,  date:"30/5/2026", home:"Palmwoods Rangers",       away:"Unity Kingbrowns" },
+  // Round 10 - 6/6/2026
+  { round:10, date:"6/6/2026",  home:"Unity Kingbrowns",        away:"Caloundra Black" },
+  { round:10, date:"6/6/2026",  home:"Currimundi Bluebottles",  away:"Siena Frogs" },
+  { round:10, date:"6/6/2026",  home:"Buderim Force",           away:"Chancellor Cats" },
+  { round:10, date:"6/6/2026",  home:"Chancellor Cruisers",     away:"Caloundra Storm" },
+  { round:10, date:"6/6/2026",  home:"Palmwoods Rangers",       away:"Palmwoods Commandos" },
+  // Round 11 - 13/6/2026
+  { round:11, date:"13/6/2026", home:"Caloundra Black",         away:"Palmwoods Commandos" },
+  { round:11, date:"13/6/2026", home:"Chancellor Cruisers",     away:"Unity Kingbrowns" },
+  { round:11, date:"13/6/2026", home:"Caloundra Storm",         away:"Palmwoods Rangers" },
+  { round:11, date:"13/6/2026", home:"Chancellor Cats",         away:"Siena Frogs" },
+  { round:11, date:"13/6/2026", home:"Currimundi Bluebottles",  away:"Buderim Force" },
+  // Round 12 - 20/6/2026
+  { round:12, date:"20/6/2026", home:"Palmwoods Rangers",       away:"Currimundi Bluebottles" },
+  { round:12, date:"20/6/2026", home:"Chancellor Cats",         away:"Chancellor Cruisers" },
+  { round:12, date:"20/6/2026", home:"Buderim Force",           away:"Palmwoods Commandos" },
+  { round:12, date:"20/6/2026", home:"Caloundra Black",         away:"Siena Frogs" },
+  { round:12, date:"20/6/2026", home:"Unity Kingbrowns",        away:"Caloundra Storm" },
+  // Round 13 - 11/7/2026
+  { round:13, date:"11/7/2026", home:"Buderim Force",           away:"Caloundra Black" },
+  { round:13, date:"11/7/2026", home:"Chancellor Cruisers",     away:"Palmwoods Rangers" },
+  { round:13, date:"11/7/2026", home:"Caloundra Storm",         away:"Currimundi Bluebottles" },
+  { round:13, date:"11/7/2026", home:"Siena Frogs",             away:"Unity Kingbrowns" },
+  { round:13, date:"11/7/2026", home:"Palmwoods Commandos",     away:"Chancellor Cats" },
+  // Round 14 - 18/7/2026
+  { round:14, date:"18/7/2026", home:"Currimundi Bluebottles",  away:"Palmwoods Commandos" },
+  { round:14, date:"18/7/2026", home:"Chancellor Cats",         away:"Unity Kingbrowns" },
+  { round:14, date:"18/7/2026", home:"Chancellor Cruisers",     away:"Buderim Force" },
+  { round:14, date:"18/7/2026", home:"Caloundra Black",         away:"Palmwoods Rangers" },
+  { round:14, date:"18/7/2026", home:"Caloundra Storm",         away:"Siena Frogs" },
+  // Round 15 - 25/7/2026
+  { round:15, date:"25/7/2026", home:"Siena Frogs",             away:"Chancellor Cruisers" },
+  { round:15, date:"25/7/2026", home:"Palmwoods Commandos",     away:"Caloundra Storm" },
+  { round:15, date:"25/7/2026", home:"Currimundi Bluebottles",  away:"Caloundra Black" },
+  { round:15, date:"25/7/2026", home:"Buderim Force",           away:"Unity Kingbrowns" },
+  { round:15, date:"25/7/2026", home:"Palmwoods Rangers",       away:"Chancellor Cats" },
+  // Round 16 - 1/8/2026
+  { round:16, date:"1/8/2026",  home:"Currimundi Bluebottles",  away:"Chancellor Cruisers" },
+  { round:16, date:"1/8/2026",  home:"Caloundra Storm",         away:"Buderim Force" },
+  { round:16, date:"1/8/2026",  home:"Siena Frogs",             away:"Palmwoods Rangers" },
+  { round:16, date:"1/8/2026",  home:"Unity Kingbrowns",        away:"Palmwoods Commandos" },
+  { round:16, date:"1/8/2026",  home:"Caloundra Black",         away:"Chancellor Cats" },
+  // Round 17 - 8/8/2026
+  { round:17, date:"8/8/2026",  home:"Chancellor Cats",         away:"Caloundra Storm" },
+  { round:17, date:"8/8/2026",  home:"Chancellor Cruisers",     away:"Caloundra Black" },
+  { round:17, date:"8/8/2026",  home:"Unity Kingbrowns",        away:"Currimundi Bluebottles" },
+  { round:17, date:"8/8/2026",  home:"Palmwoods Rangers",       away:"Buderim Force" },
+  { round:17, date:"8/8/2026",  home:"Palmwoods Commandos",     away:"Siena Frogs" },
+  // Round 18 - 15/8/2026
+  { round:18, date:"15/8/2026", home:"Caloundra Black",         away:"Caloundra Storm" },
+  { round:18, date:"15/8/2026", home:"Siena Frogs",             away:"Buderim Force" },
+  { round:18, date:"15/8/2026", home:"Chancellor Cats",         away:"Currimundi Bluebottles" },
+  { round:18, date:"15/8/2026", home:"Palmwoods Rangers",       away:"Unity Kingbrowns" },
+  { round:18, date:"15/8/2026", home:"Palmwoods Commandos",     away:"Chancellor Cruisers" },
+];
+
+// Store scores: key = index in fixtures array, value = {homeScore, awayScore}
+const scores = {};
+
+function getStandings() {
+  const standings = [];
+  for (const [name, t] of Object.entries(teams)) {
+    standings.push({
+      name,
+      p: t.p,
+      w: t.w,
+      d: t.d,
+      l: t.l,
+      gf: t.gf,
+      ga: t.ga,
+      gd: t.gf - t.ga,
+      pts: t.pts,
+    });
+  }
+  standings.sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.name.localeCompare(b.name);
+  });
+  return standings;
+}
+
+function renderTable() {
+  const standings = getStandings();
+  const tbody = document.getElementById("standingsBody");
+  tbody.innerHTML = "";
+
+  standings.forEach((t, i) => {
+    const pos = i + 1;
+    let posClass = "";
+    if (pos === 1) posClass = "pos-1";
+    else if (pos === 2) posClass = "pos-2";
+    else if (pos === 3) posClass = "pos-3";
+    else if (pos >= 9) posClass = "pos-bottom";
+
+    const gdStr = t.gd > 0 ? `+${t.gd}` : `${t.gd}`;
+    const gdClass = t.gd >= 0 ? "gd-pos" : "gd-neg";
+
+    const tr = document.createElement("tr");
+    tr.className = posClass;
+    tr.innerHTML = `
+      <td>${pos}</td>
+      <td>${t.name}</td>
+      <td>${t.p}</td>
+      <td>${t.w}</td>
+      <td>${t.d}</td>
+      <td>${t.l}</td>
+      <td>${t.gf}</td>
+      <td>${t.ga}</td>
+      <td class="${gdClass}">${gdStr}</td>
+      <td class="pts-cell">${t.pts}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Update counters
+  const totalGames = fixtures.length;
+  const played = Object.keys(scores).length;
+  document.getElementById("gamesPlayed").textContent = 25 + played;
+  document.getElementById("gamesRemaining").textContent = totalGames - played;
+  document.getElementById("playedCount").textContent = `${25 + played} / 90 played`;
+}
+
+function renderFixtures() {
+  const container = document.getElementById("fixturesContainer");
+  container.innerHTML = "";
+
+  // Group by round
+  const rounds = {};
+  fixtures.forEach((f, idx) => {
+    if (!rounds[f.round]) rounds[f.round] = { date: f.date, matches: [] };
+    rounds[f.round].matches.push({ ...f, idx });
+  });
+
+  for (const [r, data] of Object.entries(rounds)) {
+    const roundNum = parseInt(r);
+    const group = document.createElement("div");
+    group.className = "round-group";
+
+    const header = document.createElement("div");
+    header.className = "round-header";
+    header.innerHTML = `<span>Round ${roundNum} <span class="date">${data.date}</span></span><span class="toggle">▼</span>`;
+
+    const body = document.createElement("div");
+    body.className = "round-body";
+
+    header.addEventListener("click", () => {
+      body.classList.toggle("open");
+      header.querySelector(".toggle").classList.toggle("open");
+    });
+
+    data.matches.forEach(m => {
+      const row = document.createElement("div");
+      row.className = "match-row";
+      row.id = `match-${m.idx}`;
+
+      const saved = scores[m.idx];
+      if (saved) row.classList.add("completed");
+
+      row.innerHTML = `
+        <span class="team-name home">${m.home}</span>
+        <div class="score-inputs">
+          <input type="number" min="0" max="99" id="home-${m.idx}" value="${saved ? saved.homeScore : ''}" />
+          <span class="score-sep">–</span>
+          <input type="number" min="0" max="99" id="away-${m.idx}" value="${saved ? saved.awayScore : ''}" />
+        </div>
+        <span class="team-name away">${m.away}</span>
+        <button class="apply-btn" id="btn-${m.idx}" onclick="applyScore(${m.idx})" ${saved ? 'disabled' : ''}>${saved ? '✓' : 'Set'}</button>
+        ${saved ? `<button class="undo-btn" onclick="undoScore(${m.idx})">Undo</button>` : ''}
+      `;
+
+      body.appendChild(row);
+    });
+
+    group.appendChild(header);
+    group.appendChild(body);
+    container.appendChild(group);
+  }
+
+  // Auto-open first round
+  const firstRound = container.querySelector(".round-body");
+  if (firstRound) {
+    firstRound.classList.add("open");
+    firstRound.previousElementSibling.querySelector(".toggle").classList.add("open");
+  }
+}
+
+function applyScore(idx) {
+  const homeInput = document.getElementById(`home-${idx}`);
+  const awayInput = document.getElementById(`away-${idx}`);
+  const homeScore = parseInt(homeInput.value);
+  const awayScore = parseInt(awayInput.value);
+
+  if (isNaN(homeScore) || isNaN(awayScore) || homeScore < 0 || awayScore < 0) {
+    alert("Please enter valid non-negative scores for both teams.");
+    return;
+  }
+
+  const f = fixtures[idx];
+
+  // Apply to teams
+  const home = teams[f.home];
+  const away = teams[f.away];
+
+  home.p++; away.p++;
+  home.gf += homeScore; home.ga += awayScore;
+  away.gf += awayScore; away.ga += homeScore;
+
+  if (homeScore > awayScore) {
+    home.w++; home.pts += 3;
+    away.l++;
+  } else if (homeScore < awayScore) {
+    away.w++; away.pts += 3;
+    home.l++;
+  } else {
+    home.d++; away.d++;
+    home.pts++; away.pts++;
+  }
+
+  scores[idx] = { homeScore, awayScore };
+
+  // Update UI
+  const row = document.getElementById(`match-${idx}`);
+  row.classList.add("completed");
+  homeInput.classList.add("scored");
+  awayInput.classList.add("scored");
+  const btn = document.getElementById(`btn-${idx}`);
+  btn.disabled = true;
+  btn.textContent = "✓";
+
+  // Add undo button if not exists
+  if (!row.querySelector(".undo-btn")) {
+    const undoBtn = document.createElement("button");
+    undoBtn.className = "undo-btn";
+    undoBtn.textContent = "Undo";
+    undoBtn.onclick = () => undoScore(idx);
+    btn.after(undoBtn);
+  }
+
+  renderTable();
+}
+
+function undoScore(idx) {
+  if (!scores[idx]) return;
+  const f = fixtures[idx];
+  const { homeScore, awayScore } = scores[idx];
+
+  const home = teams[f.home];
+  const away = teams[f.away];
+
+  home.p--; away.p--;
+  home.gf -= homeScore; home.ga -= awayScore;
+  away.gf -= awayScore; away.ga -= homeScore;
+
+  if (homeScore > awayScore) {
+    home.w--; home.pts -= 3;
+    away.l--;
+  } else if (homeScore < awayScore) {
+    away.w--; away.pts -= 3;
+    home.l--;
+  } else {
+    home.d--; away.d--;
+    home.pts--; away.pts--;
+  }
+
+  delete scores[idx];
+
+  const row = document.getElementById(`match-${idx}`);
+  row.classList.remove("completed");
+  const homeInput = document.getElementById(`home-${idx}`);
+  const awayInput = document.getElementById(`away-${idx}`);
+  homeInput.value = "";
+  awayInput.value = "";
+  homeInput.classList.remove("scored");
+  awayInput.classList.remove("scored");
+
+  const btn = document.getElementById(`btn-${idx}`);
+  btn.disabled = false;
+  btn.textContent = "Set";
+
+  const undoBtn = row.querySelector(".undo-btn");
+  if (undoBtn) undoBtn.remove();
+
+  renderTable();
+}
+
+function resetAll() {
+  if (!confirm("Reset ALL scores and restore the original table?")) return;
+
+  // Restore original team data
+  const original = {
+    "Palmwoods Commandos":     { p:5, w:5, d:0, l:0, gf:29, ga:2,  pts:15 },
+    "Chancellor Cruisers":     { p:5, w:4, d:1, l:0, gf:27, ga:8,  pts:13 },
+    "Caloundra Black":         { p:5, w:4, d:0, l:1, gf:33, ga:6,  pts:12 },
+    "Currimundi Bluebottles":  { p:5, w:4, d:0, l:1, gf:16, ga:2,  pts:12 },
+    "Caloundra Storm":         { p:5, w:3, d:1, l:1, gf:21, ga:6,  pts:10 },
+    "Siena Frogs":             { p:5, w:1, d:1, l:3, gf:15, ga:21, pts:4  },
+    "Unity Kingbrowns":        { p:5, w:1, d:1, l:3, gf:7,  ga:22, pts:4  },
+    "Buderim Force":           { p:5, w:1, d:0, l:4, gf:13, ga:16, pts:3  },
+    "Chancellor Cats":         { p:5, w:0, d:0, l:5, gf:2,  ga:37, pts:0  },
+    "Palmwoods Rangers":       { p:5, w:0, d:0, l:5, gf:2,  ga:45, pts:0  },
+  };
+
+  for (const [name, t] of Object.entries(original)) {
+    teams[name] = { ...t };
+  }
+
+  for (const key of Object.keys(scores)) delete scores[key];
+
+  renderTable();
+  renderFixtures();
+}
+
+function toggleAllRounds(open) {
+  document.querySelectorAll(".round-body").forEach(b => {
+    if (open) b.classList.add("open");
+    else b.classList.remove("open");
+  });
+  document.querySelectorAll(".round-header .toggle").forEach(t => {
+    if (open) t.classList.add("open");
+    else t.classList.remove("open");
+  });
+}
+
+// ── INIT ──
+renderTable();
+renderFixtures();
+</script>
+
+</body>
+</html>
